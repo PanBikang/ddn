@@ -164,7 +164,7 @@ class OptimalTransportFcn(torch.autograd.Function):
             PdivC = P[:, 1:H, 0:W] / beta.view(B, 1, W)
             RminusPPdivC = torch.diag_embed(alpha[:, 1:H]) - torch.einsum("bij,bkj->bik", P[:, 1:H, 0:W], PdivC)
             try:
-                block_11 = torch.cholesky(RminusPPdivC)
+                block_11 = torch.linalg.cholesky(RminusPPdivC)
             except:
                 # block_11 = torch.ones((B, H-1, H-1), device=M.device, dtype=M.dtype)
                 block_11 = torch.eye(H - 1, device=M.device, dtype=M.dtype).view(1, H - 1, H - 1).repeat(B, 1, 1)
@@ -289,56 +289,57 @@ if __name__ == '__main__':
 
     torch.manual_seed(0)
 
-    M = torch.randn((3, 5, 7), dtype=torch.double, requires_grad=True)
+    M = torch.randn((3, 500, 700), dtype=torch.double, requires_grad=True)
     f = OptimalTransportFcn().apply
+    loss = torch.norm()
 
-    print(torch.all(torch.isclose(sinkhorn(M), f(M))))
-    print(torch.all(torch.isclose(sinkhorn(M), sinkhorn(torch.exp(-1.0 * M), logspace=True))))
-
-    test = gradcheck(f, (M, None, None, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    test = gradcheck(f, (torch.exp(-1.0 * M), None, None, 1.0, 1.0e-6, 1000, True, 'block'), eps=1e-6, atol=1e-3,
-                     rtol=1e-6)
-    print(test)
-
-    test = gradcheck(f, (M, None, None, 1.0, 1.0e-6, 1000, False, 'full'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    test = gradcheck(f, (M, None, None, 10.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    test = gradcheck(f, (M, None, None, 10.0, 1.0e-6, 1000, False, 'full'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    r = normalize(torch.rand((M.shape[0], M.shape[1]), dtype=torch.double, requires_grad=False), p=1.0)
-    c = normalize(torch.rand((M.shape[0], M.shape[2]), dtype=torch.double, requires_grad=False), p=1.0)
-
-    test = gradcheck(f, (M, r, c, 1.0, 1.0e-9, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    # with r and c inputs
-    r = normalize(torch.rand((M.shape[0], M.shape[1]), dtype=torch.double, requires_grad=True), p=1.0)
-    c = normalize(torch.rand((M.shape[0], M.shape[2]), dtype=torch.double, requires_grad=True), p=1.0)
-
-    test = gradcheck(f, (M, r, None, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    test = gradcheck(f, (M, None, c, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    test = gradcheck(f, (M, r, c, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    test = gradcheck(f, (M, r, c, 10.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    # shared r and c
-    r = normalize(torch.rand((1, M.shape[1]), dtype=torch.double, requires_grad=True), p=1.0)
-    c = normalize(torch.rand((1, M.shape[2]), dtype=torch.double, requires_grad=True), p=1.0)
-
-    test = gradcheck(f, (M, r, c, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
-
-    test = gradcheck(f, (M, r, c, 1.0, 1.0e-6, 1000, False, 'full'), eps=1e-6, atol=1e-3, rtol=1e-6)
-    print(test)
+    # print(torch.all(torch.isclose(sinkhorn(M), f(M))))
+    # print(torch.all(torch.isclose(sinkhorn(M), sinkhorn(torch.exp(-1.0 * M), logspace=True))))
+    #
+    # test = gradcheck(f, (M, None, None, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # test = gradcheck(f, (torch.exp(-1.0 * M), None, None, 1.0, 1.0e-6, 1000, True, 'block'), eps=1e-6, atol=1e-3,
+    #                  rtol=1e-6)
+    # print(test)
+    #
+    # test = gradcheck(f, (M, None, None, 1.0, 1.0e-6, 1000, False, 'full'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # test = gradcheck(f, (M, None, None, 10.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # test = gradcheck(f, (M, None, None, 10.0, 1.0e-6, 1000, False, 'full'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # r = normalize(torch.rand((M.shape[0], M.shape[1]), dtype=torch.double, requires_grad=False), p=1.0)
+    # c = normalize(torch.rand((M.shape[0], M.shape[2]), dtype=torch.double, requires_grad=False), p=1.0)
+    #
+    # test = gradcheck(f, (M, r, c, 1.0, 1.0e-9, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # # with r and c inputs
+    # r = normalize(torch.rand((M.shape[0], M.shape[1]), dtype=torch.double, requires_grad=True), p=1.0)
+    # c = normalize(torch.rand((M.shape[0], M.shape[2]), dtype=torch.double, requires_grad=True), p=1.0)
+    #
+    # test = gradcheck(f, (M, r, None, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # test = gradcheck(f, (M, None, c, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # test = gradcheck(f, (M, r, c, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # test = gradcheck(f, (M, r, c, 10.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # # shared r and c
+    # r = normalize(torch.rand((1, M.shape[1]), dtype=torch.double, requires_grad=True), p=1.0)
+    # c = normalize(torch.rand((1, M.shape[2]), dtype=torch.double, requires_grad=True), p=1.0)
+    #
+    # test = gradcheck(f, (M, r, c, 1.0, 1.0e-6, 1000, False, 'block'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
+    #
+    # test = gradcheck(f, (M, r, c, 1.0, 1.0e-6, 1000, False, 'full'), eps=1e-6, atol=1e-3, rtol=1e-6)
+    # print(test)
